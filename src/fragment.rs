@@ -20,18 +20,18 @@ const INIT_SIZE: u64 = COUNTER_SIZE + DATAADDRESS_SIZE;
 impl Fragment {
     pub fn new<P: AsRef<Path>>(path: P) -> Self {
         let mut filemmap = FileMmap::new(path).unwrap();
-        if filemmap.len() == 0 {
+        if filemmap.is_empty() {
             filemmap.set_len(INIT_SIZE).unwrap();
         }
         Self { filemmap }
     }
 
     unsafe fn list(&self) -> *const DataAddress {
-        self.filemmap.as_ptr().offset(COUNTER_SIZE as isize) as *const DataAddress
+        unsafe { self.filemmap.as_ptr().offset(COUNTER_SIZE as isize) as *const DataAddress }
     }
 
     unsafe fn list_mut(&mut self) -> *mut DataAddress {
-        self.filemmap.as_ptr().offset(COUNTER_SIZE as isize) as *mut DataAddress
+        unsafe { self.filemmap.as_ptr().offset(COUNTER_SIZE as isize) as *mut DataAddress }
     }
 
     pub fn insert(&mut self, addr: DataAddress) {
@@ -50,14 +50,16 @@ impl Fragment {
     }
 
     pub unsafe fn release(&mut self, row: NonZeroU64, len: usize) {
-        let row = row.get() as u64;
-        let s = &mut *self.list_mut().offset(row as isize);
-        s.offset += len as i64;
-        s.len -= len as u64;
+        unsafe {
+            let row = row.get();
+            let s = &mut *self.list_mut().offset(row as isize);
+            s.offset += len as i64;
+            s.len -= len as u64;
 
-        let record_count = self.filemmap.as_ptr() as *mut u64;
-        if s.len == 0 && row == *record_count {
-            *record_count -= 1;
+            let record_count = self.filemmap.as_ptr() as *mut u64;
+            if s.len == 0 && row == *record_count {
+                *record_count -= 1;
+            }
         }
     }
 

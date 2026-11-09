@@ -1,3 +1,7 @@
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeDoctests;
+
 use std::path::Path;
 
 use file_mmap::FileMmap;
@@ -37,7 +41,7 @@ impl VariousDataFile {
     pub fn new<P: AsRef<Path>>(path: P) -> Self {
         let path = path.as_ref();
         let mut filemmap = FileMmap::new(path).unwrap();
-        if filemmap.len() == 0 {
+        if filemmap.is_empty() {
             filemmap.set_len(1).unwrap();
         }
         VariousDataFile {
@@ -71,7 +75,7 @@ impl VariousDataFile {
     }
 
     /// Inserts a byte string and returns [Data] containing the address..
-    pub fn insert(&mut self, target: &[u8]) -> Data {
+    pub fn insert(&mut self, target: &[u8]) -> Data<'_> {
         let len = target.len();
         Data {
             address: DataAddress {
