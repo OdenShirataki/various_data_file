@@ -57,7 +57,16 @@ impl VariousDataFile {
     }
 
     /// Get slice from [DataAddress].
+    ///
+    /// # Panics
+    /// Panics if the address points outside the file, e.g. when the address
+    /// came from a different or corrupted file.
     pub fn bytes(&self, word: &DataAddress) -> &[u8] {
+        let in_range = u64::try_from(word.offset)
+            .ok()
+            .and_then(|offset| offset.checked_add(word.len))
+            .is_some_and(|end| end <= self.filemmap.len());
+        assert!(in_range, "DataAddress out of range of the file");
         unsafe { self.filemmap.bytes(word.offset as isize, word.len as usize) }
     }
 
